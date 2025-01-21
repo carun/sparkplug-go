@@ -26,4 +26,5 @@ go.work.sum
 
 # Generated protobuf files
 *.pb.*
+build
 sparkbuf

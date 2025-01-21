@@ -1,0 +1,13 @@
+mqtt:
+  broker: "localhost"
+  port: 1883
+  clientid: "sparkplug-go-publisher"
+  username: ""  # Optional
+  password: ""  # Optional
+
+sparkplug:
+  groupid: "Sparkplug B Devices"
+  edgenodeid: "Node-001"
+  deviceid: "Device-001"
+  scadahostid: "scada-host-1"
+  

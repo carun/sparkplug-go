@@ -1,150 +1,135 @@
 syntax = "proto3";
 
-package sparkplug;
+package org.eclipse.tahu.protobuf;
 option go_package = "./proto";
 
-// Enum for message types as per Sparkplug specification
+// Enum for message types as per Sparkplug B specification
 enum MessageType {
-    UNKNOWN_MESSAGE = 0;  // Undefined or unknown message type
-    NBIRTH = 1;           // Node Birth
-    NDEATH = 2;           // Node Death
-    DBIRTH = 3;           // Device Birth
-    DDEATH = 4;           // Device Death
-    DATA = 5;             // Normal data message
-    CMD = 6;              // Command message
-    STATE = 7;            // State message (online/offline)
-    EVENT_LOG = 8;        // Event or alert logging
+    UNKNOWN_MESSAGE = 0;
+    NBIRTH = 1;          // Node Birth
+    NDEATH = 2;         // Node Death
+    DBIRTH = 3;         // Device Birth
+    DDEATH = 4;         // Device Death
+    NDATA = 5;          // Node Data
+    DDATA = 6;          // Device Data
+    NCMD = 7;           // Node Command
+    DCMD = 8;           // Device Command
+    STATE = 9;          // State message
 }
 
-// Enum for data types in metrics
+// DataType enum matches official Sparkplug B specification
 enum DataType {
-    UNKNOWN = 0;        // Undefined type
-    FLOAT = 1;          // Floating point number
-    INT = 2;            // Integer
-    LONG = 3;           // Long integer
-    STRING = 4;         // String
-    BOOLEAN = 5;        // Boolean
-    BYTES = 6;          // Binary data
+    Unknown = 0;
+    Int8 = 1;
+    Int16 = 2;
+    Int32 = 3;
+    Int64 = 4;
+    UInt8 = 5;
+    UInt16 = 6;
+    UInt32 = 7;
+    UInt64 = 8;
+    Float = 9;
+    Double = 10;
+    Boolean = 11;
+    String = 12;
+    DateTime = 13;
+    Text = 14;
+    UUID = 15;
+    DataSetType = 16;
+    Bytes = 17;
+    File = 18;
+    TemplateType = 19;
 }
 
-// Enum for compression types
-enum CompressionType {
-    NONE = 0;  // No compression
-    GZIP = 1;  // GZIP compression
-    LZ4 = 2;   // LZ4 compression
+// DataSet definition from Sparkplug spec
+message DataSet {
+    message DataSetValue {
+        repeated string string_value = 1;
+        repeated uint64 long_value = 2;
+        repeated float float_value = 3;
+        repeated double double_value = 4;
+        repeated bool boolean_value = 5;
+    }
+    
+    message Row {
+        repeated DataSetValue elements = 1;
+    }
+
+    uint64 num_of_columns = 1;
+    repeated string columns = 2;
+    repeated string types = 3;
+    repeated Row rows = 4;
 }
 
-// Message for validation errors
-message ValidationError {
-    string field = 1;           // Field causing the error
-    string description = 2;     // Description of the issue
+// Template definition
+message Template {
+    message Parameter {
+        string name = 1;
+        DataType type = 2;
+        oneof value {
+            double double_value = 3;
+            float float_value = 4;
+            int64 long_value = 5;
+            bool boolean_value = 6;
+            string string_value = 7;
+            DataSet dataset_value = 8;
+            Template template_value = 9;
+        }
+    }
+
+    string version = 1;
+    string template_ref = 2;
+    bool is_definition = 3;
+    repeated Parameter parameters = 4;
 }
 
-// Message for a single metric
-message Metric {
-    string name = 1;               // Metric name
-    string alias = 2;              // Optional alias for the metric
-    uint64 timestamp = 3;          // Timestamp for the metric
-    DataType type = 4;             // Data type of the metric
+// Property Value matches Sparkplug B specification
+message PropertyValue {
+    DataType type = 1;
+    bool is_null = 2;
     oneof value {
-        double float_value = 5;    // Floating point value
-        int32 int_value = 6;       // Integer value
-        int64 long_value = 7;      // Long integer value
-        string string_value = 8;   // String value
-        bool boolean_value = 9;    // Boolean value
-        bytes bytes_value = 10;    // Binary value
+        double double_value = 3;
+        float float_value = 4;
+        int64 long_value = 5;
+        bool boolean_value = 6;
+        string string_value = 7;
+        DataSet dataset_value = 8;
+        Template template_value = 9;
     }
-    bool is_delta = 11;            // Indicates if this is a delta update
 }
 
-// Message for grouped metrics
-message MetricGroup {
-    string name = 1;                  // Name of the metric group
-    repeated Metric metrics = 2;      // Metrics in the group
+// PropertySet matches Sparkplug B specification
+message PropertySet {
+    map<string, PropertyValue> properties = 1;
 }
 
-// Message for devices
-message Device {
-    string id = 1;                    // Unique identifier for the device
-    string group_id = 2;              // Group identifier
-    string parent_id = 3;             // Parent node or device ID
-    repeated MetricGroup metric_groups = 4; // Grouped metrics
+// Metric definition matches Sparkplug B specification
+message Metric {
+    string name = 1;
+    uint64 alias = 2;
+    uint64 timestamp = 3;
+    DataType datatype = 4;
+    bool is_historical = 5;
+    bool is_transient = 6;
+    bool is_null = 7;
+    PropertySet properties = 8;
+    oneof value {
+        double double_value = 9;
+        float float_value = 10;
+        int64 long_value = 11;
+        bool boolean_value = 12;
+        string string_value = 13;
+        DataSet dataset_value = 14;
+        Template template_value = 15;
+        bytes bytes_value = 16;
+    }
 }
 
-// Message for nodes
-message Node {
-    string id = 1;                    // Unique identifier for the node
-    repeated MetricGroup metric_groups = 2; // Grouped metrics
-}
-
-// Message for commands
-message Command {
-    string command_name = 1;          // Command name
-    repeated Metric parameters = 2;   // Command parameters as metrics
-}
-
-// Message for state
-message StateMessage {
-    string state = 1;                 // State (e.g., "ONLINE", "OFFLINE")
-    string reason = 2;                // Reason for the state change
-}
-
-// Message for event logs
-message EventLog {
-    uint64 timestamp = 1;             // Event timestamp
-    string severity = 2;              // Severity level (INFO, WARN, ERROR)
-    string message = 3;               // Event message
-    string source_id = 4;             // Source Node or Device ID
-}
-
-// Message for payload security
-message PayloadSecurity {
-    string signature = 1;             // Digital signature
-    string encryption_type = 2;       // Encryption type (e.g., AES256)
-    bytes encryption_key = 3;         // Encrypted key
-}
-
-// Message for MQTT topic structure
-message Topic {
-    string namespace = 1;             // Namespace (e.g., "spBv1.0")
-    string group_id = 2;              // Group identifier
-    string edge_node_id = 3;          // Edge Node ID
-    string device_id = 4;             // Device ID (optional)
-}
-
-// Main payload message
+// Payload definition matches Sparkplug B specification
 message Payload {
-    string uuid = 1;                  // Unique identifier for the payload
-    uint64 timestamp = 2;             // Timestamp in milliseconds
-    string schema_version = 3;        // Schema version for compatibility
-    CompressionType compression = 4;  // Optional compression type
-    Topic topic = 5;                  // MQTT topic details
-    MessageType type = 6;             // Type of the message
-    repeated ValidationError errors = 7; // Validation errors (if any)
-    PayloadSecurity security = 8;     // Security details
-    oneof message_body {
-        BirthCertificate nbirth = 9;  // Node Birth message
-        BirthCertificate dbirth = 10; // Device Birth message
-        DeathCertificate ndeath = 11; // Node Death message
-        DeathCertificate ddeath = 12; // Device Death message
-        Node node_message = 13;       // Node data
-        Device device_message = 14;   // Device data
-        Command command = 15;         // Command message
-        StateMessage state = 16;      // State message
-        EventLog event_log = 17;      // Event log
-    }
-}
-
-// Message for birth certificates
-message BirthCertificate {
-    string id = 1;                    // Identifier for the node or device
-    uint64 timestamp = 2;             // Birth timestamp
-    repeated Metric metrics = 3;      // Initial metrics
-}
-
-// Message for death certificates
-message DeathCertificate {
-    string id = 1;                    // Identifier for the node or device
-    uint64 timestamp = 2;             // Death timestamp
-    string reason = 3;                // Reason for death
+    uint64 timestamp = 1;
+    repeated Metric metrics = 2;
+    uint64 seq = 3;
+    string uuid = 4;
+    bytes body = 5;
 }
