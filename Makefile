@@ -24,6 +24,7 @@ build: ## Build the binary
 clean: ## Clean build directory
 	$(GOCLEAN)
 	rm -rf $(BUILD_DIR)
+	rm -f proto/*.pb.*
 
 test: ## Run tests
 	$(GOTEST) -v ./...
