@@ -1,0 +1,150 @@
+syntax = "proto3";
+
+package sparkplug;
+option go_package = "./proto";
+
+// Enum for message types as per Sparkplug specification
+enum MessageType {
+    UNKNOWN_MESSAGE = 0;  // Undefined or unknown message type
+    NBIRTH = 1;           // Node Birth
+    NDEATH = 2;           // Node Death
+    DBIRTH = 3;           // Device Birth
+    DDEATH = 4;           // Device Death
+    DATA = 5;             // Normal data message
+    CMD = 6;              // Command message
+    STATE = 7;            // State message (online/offline)
+    EVENT_LOG = 8;        // Event or alert logging
+}
+
+// Enum for data types in metrics
+enum DataType {
+    UNKNOWN = 0;        // Undefined type
+    FLOAT = 1;          // Floating point number
+    INT = 2;            // Integer
+    LONG = 3;           // Long integer
+    STRING = 4;         // String
+    BOOLEAN = 5;        // Boolean
+    BYTES = 6;          // Binary data
+}
+
+// Enum for compression types
+enum CompressionType {
+    NONE = 0;  // No compression
+    GZIP = 1;  // GZIP compression
+    LZ4 = 2;   // LZ4 compression
+}
+
+// Message for validation errors
+message ValidationError {
+    string field = 1;           // Field causing the error
+    string description = 2;     // Description of the issue
+}
+
+// Message for a single metric
+message Metric {
+    string name = 1;               // Metric name
+    string alias = 2;              // Optional alias for the metric
+    uint64 timestamp = 3;          // Timestamp for the metric
+    DataType type = 4;             // Data type of the metric
+    oneof value {
+        double float_value = 5;    // Floating point value
+        int32 int_value = 6;       // Integer value
+        int64 long_value = 7;      // Long integer value
+        string string_value = 8;   // String value
+        bool boolean_value = 9;    // Boolean value
+        bytes bytes_value = 10;    // Binary value
+    }
+    bool is_delta = 11;            // Indicates if this is a delta update
+}
+
+// Message for grouped metrics
+message MetricGroup {
+    string name = 1;                  // Name of the metric group
+    repeated Metric metrics = 2;      // Metrics in the group
+}
+
+// Message for devices
+message Device {
+    string id = 1;                    // Unique identifier for the device
+    string group_id = 2;              // Group identifier
+    string parent_id = 3;             // Parent node or device ID
+    repeated MetricGroup metric_groups = 4; // Grouped metrics
+}
+
+// Message for nodes
+message Node {
+    string id = 1;                    // Unique identifier for the node
+    repeated MetricGroup metric_groups = 2; // Grouped metrics
+}
+
+// Message for commands
+message Command {
+    string command_name = 1;          // Command name
+    repeated Metric parameters = 2;   // Command parameters as metrics
+}
+
+// Message for state
+message StateMessage {
+    string state = 1;                 // State (e.g., "ONLINE", "OFFLINE")
+    string reason = 2;                // Reason for the state change
+}
+
+// Message for event logs
+message EventLog {
+    uint64 timestamp = 1;             // Event timestamp
+    string severity = 2;              // Severity level (INFO, WARN, ERROR)
+    string message = 3;               // Event message
+    string source_id = 4;             // Source Node or Device ID
+}
+
+// Message for payload security
+message PayloadSecurity {
+    string signature = 1;             // Digital signature
+    string encryption_type = 2;       // Encryption type (e.g., AES256)
+    bytes encryption_key = 3;         // Encrypted key
+}
+
+// Message for MQTT topic structure
+message Topic {
+    string namespace = 1;             // Namespace (e.g., "spBv1.0")
+    string group_id = 2;              // Group identifier
+    string edge_node_id = 3;          // Edge Node ID
+    string device_id = 4;             // Device ID (optional)
+}
+
+// Main payload message
+message Payload {
+    string uuid = 1;                  // Unique identifier for the payload
+    uint64 timestamp = 2;             // Timestamp in milliseconds
+    string schema_version = 3;        // Schema version for compatibility
+    CompressionType compression = 4;  // Optional compression type
+    Topic topic = 5;                  // MQTT topic details
+    MessageType type = 6;             // Type of the message
+    repeated ValidationError errors = 7; // Validation errors (if any)
+    PayloadSecurity security = 8;     // Security details
+    oneof message_body {
+        BirthCertificate nbirth = 9;  // Node Birth message
+        BirthCertificate dbirth = 10; // Device Birth message
+        DeathCertificate ndeath = 11; // Node Death message
+        DeathCertificate ddeath = 12; // Device Death message
+        Node node_message = 13;       // Node data
+        Device device_message = 14;   // Device data
+        Command command = 15;         // Command message
+        StateMessage state = 16;      // State message
+        EventLog event_log = 17;      // Event log
+    }
+}
+
+// Message for birth certificates
+message BirthCertificate {
+    string id = 1;                    // Identifier for the node or device
+    uint64 timestamp = 2;             // Birth timestamp
+    repeated Metric metrics = 3;      // Initial metrics
+}
+
+// Message for death certificates
+message DeathCertificate {
+    string id = 1;                    // Identifier for the node or device
+    uint64 timestamp = 2;             // Death timestamp
+    string reason = 3;                // Reason for death
+}
