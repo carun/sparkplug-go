@@ -5,7 +5,7 @@ GOTEST=$(GOCMD) test
 GOCLEAN=$(GOCMD) clean
 GOGET=$(GOCMD) get
 GOMOD=$(GOCMD) mod
-BINARY_NAME=sparkplug-publisher
+BINARY_NAME=sp-pub
 PROTO_FILES=$(wildcard proto/*.proto)
 
 # Build information
